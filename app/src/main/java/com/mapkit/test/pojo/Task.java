@@ -132,4 +132,21 @@ public class Task{
     public void setTranslation(Boolean translation) {
         this.translation = translation;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("ID=").append(ID)
+                .append(";title=").append(title)
+                .append(";Date=").append(date)
+                .append(";text=").append(text)
+                .append(";longtext=").append(longText)
+                .append(";durlim=").append(durationLimitText)
+                .append(";price=").append(price)
+                .append(";loctext=").append(locationText)
+                .append(";loc=").append(location)
+                .append(";zoomlevel=").append(zoomLevel)
+                .append(";prices=").append(prices);
+        return builder.toString();
+    }
 }

@@ -6,12 +6,15 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.mapkit.test.pojo.Task;
 import ru.yandex.yandexmapkit.MapController;
@@ -25,6 +28,7 @@ import ru.yandex.yandexmapkit.utils.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by LastVar on 05.06.2015.
@@ -34,6 +38,7 @@ public class MapActivity  extends Activity implements OnBalloonListener{
     private static final String URL = "http://test.boloid.com:9000/tasks";
     private static final String TAG = "MapActivity";
     private static final Gson gson = new Gson();
+    private static final Random RND = new Random();
 
     private RequestQueue mQueue;
     private StringRequest mUpdateRequest;
@@ -42,7 +47,7 @@ public class MapActivity  extends Activity implements OnBalloonListener{
     private OverlayManager mOverlayManager;
     private Overlay mTasksOverlay;
     private List<Task> mTasks = new ArrayList<>();
-
+    private Button refreshButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,15 +56,27 @@ public class MapActivity  extends Activity implements OnBalloonListener{
         setContentView(R.layout.map);
 
         mMap = (MapView)findViewById(R.id.map);
+        refreshButton = (Button) findViewById(R.id.refreshButton);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refreshTasks();
+            }
+        });
+
         mMapController = mMap.getMapController();
         mOverlayManager = mMapController.getOverlayManager();
         mOverlayManager.getMyLocation().setEnabled(false);
 
+
+
+        mQueue = Volley.newRequestQueue(this);
+
         mUpdateRequest = new StringRequest(Request.Method.GET, URL, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                mTasks = gson.fromJson(response, new TypeToken<List<Task>>() {
-                }.getType());
+                mTasks = gson.fromJson(new JsonParser().parse(response).getAsJsonObject().getAsJsonArray("tasks"),
+                        new TypeToken<List<Task>>() {}.getType());
                 loadTasks();
             }
         }, new Response.ErrorListener() {
@@ -94,6 +111,12 @@ public class MapActivity  extends Activity implements OnBalloonListener{
             item.setBalloonItem(balloon);
             mTasksOverlay.addOverlayItem(item);
         }
+        if(mTasks.size() > 0)
+        {
+            Task task = mTasks.get(RND.nextInt(mTasks.size()));
+            mMapController.setPositionNoAnimationTo(new GeoPoint(task.getLocation().getLat(), task.getLocation().getLon()));
+            mMapController.setZoomCurrent(task.getZoomLevel());
+        }
         mOverlayManager.addOverlay(mTasksOverlay);
     }
 
@@ -107,10 +130,9 @@ public class MapActivity  extends Activity implements OnBalloonListener{
             return;
         }
 
-//        Intent intent = new Intent(this, XXX);
-        //да, через parceable более правильно, но мне лень
-//        intent.putExtra(XXX, gson.toJson(task));
-//        startActivity(intent);
+        Intent intent = new Intent(this, InfoActivity.class);
+        intent.putExtra(InfoActivity.TASK_EXTRA, gson.toJson(task));
+        startActivity(intent);
     }
 
     @Override
